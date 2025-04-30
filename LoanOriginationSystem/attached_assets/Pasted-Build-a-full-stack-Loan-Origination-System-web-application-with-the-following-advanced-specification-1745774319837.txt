@@ -1,0 +1,104 @@
+Build a full-stack Loan Origination System web application with the following advanced specifications:
+with Red and white as theme
+
+Frontend:
+
+Use Angular for the frontend.
+
+Style the app using TailwindCSS with a red and white theme.
+
+Responsive design for mobile and desktop.
+
+Pages:
+
+Borrower Details
+
+Employment Details
+
+Property Details
+
+Loan Pricing
+
+Closing Fees
+
+Consent Documents
+
+Display a Loan Milestone Tracker (PreApplication → Submitted → IRR → FRR → Closing Docs Generated → Funds Disbursed) prominently on loan-related pages.
+
+Backend:
+
+Use python and flask for backend.
+
+RESTful APIs for all front-end communication.
+
+Business Logic:
+
+Sales user fills Borrower + Employment → moves to PreApplication milestone.
+
+Sales user adds Property info → moves to Submitted milestone.
+
+Processor user uploads the employment docs and personal IDs and payslip document, save these document in database →  IRR milestone.
+
+Underwriter user pulls the document from database extracts the document content, checks the compliance score and if the score is above 90% approve the loan, then create a detailed report and save to database → 
+if approved, FRR milestone.
+
+Closer user adds closing fees details and prepare closing document report and saves to database → Closing Docs Generated milestone.
+
+Manager user ensures consent documents are signed → Funds Disbursed milestone.
+
+No need to have any authentication mechanism either to login and to invoke backend api as well.
+
+Roles: Sales, Processor, Underwriter, Closer, Manager (role-based access control).
+
+Database:
+
+Use MongoDB Atlas cloud free tier.
+Use the connection string below
+mongodb+srv://raajcse86:test123@loanoscluster.e0muykx.mongodb.net/?retryWrites=true&w=majority&appName=loanoscluster
+
+Schema/tables:
+
+Users (with roles)
+
+Loans
+
+Borrower Info
+
+Employment Info
+
+Property Info
+
+Closing Fees
+
+Milestones
+
+Uploaded Documents
+
+
+Architect the backend such that actions taken by different roles (Sales, Processor, etc.) are encapsulated in APIs that can later be called by AI agents.
+
+Structure user interactions in a way that future AI Agents (Sales Agent, Process Agent, Underwriter Agent, Closer Agent, Manager Agent) can:
+
+Trigger milestone transitions programmatically.
+
+Upload documents or fetch loan status.
+
+Ensure APIs are modular, RESTful, well-documented, and future-ready for integration with LangGraph, MCP, and A2A protocols.
+
+Deployment & GitHub Integration:
+
+After building, deploy the full application to Replit automatically.
+
+Add a README.md explaining how to run locally and future AI integration points.
+
+Extra Features:
+
+Document Upload feature for employment docs and personal IDs.
+
+Admin panel for Managers to monitor all loans at a glance.
+
+Extra Notes:
+"Use directory structure separating services, controllers, and routes in backend."
+"Add Swagger for API documentation."
+
+Do not use any Express js or node js, please use only Angular and Python flask and pymongo for mongo db connection

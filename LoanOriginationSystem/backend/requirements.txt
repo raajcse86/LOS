@@ -1,0 +1,9 @@
+Flask==2.0.1
+flask-cors==3.0.10
+pymongo==4.1.1
+python-dotenv==0.19.1
+dnspython==2.1.0
+Werkzeug==2.0.2
+Jinja2==3.0.2
+itsdangerous==2.0.1
+MarkupSafe==2.0.1
