@@ -9,7 +9,7 @@ class LoanService:
         self.loans_collection = self.db['loans']
     
     def get_all_loans(self):
-        """Get all loans from database."""
+        """Get all loans from database. changing to make test commit"""
         loans = list(self.loans_collection.find())
         # Convert ObjectId to string to make it JSON serializable
         for loan in loans:
