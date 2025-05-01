@@ -1,5 +1,8 @@
+import json
+
 from flask import jsonify, request, send_file
 from services.document_service import DocumentService
+from agents.compliance_validation import get_compliance_report
 from werkzeug.utils import secure_filename
 import os
 import io
@@ -48,7 +51,13 @@ def get_documents_by_loan(loan_id):
 def upload_document(loan_id):
     """Upload a document for a loan."""
     # Check if the request has the file part
+    print(f"DEBUG - Upload document request for loan {loan_id}")
+    print(f"DEBUG - Request method: {request.method}")
+    print(f"DEBUG - Request content type: {request.content_type}")
+    print(f"DEBUG - Request files: {request.files}")
+    print(f"DEBUG - Request form: {request.form}")
     if 'file' not in request.files:
+        print(f"DEBUG - No file part found in request.files: {list(request.files.keys())}")
         return jsonify({"error": "No file part"}), 400
     
     file = request.files['file']
@@ -101,6 +110,14 @@ def extract_document_content(document_id):
         return jsonify({"error": "Failed to extract document content"}), 500
     
     return jsonify(result)
+
+
+def validate_document():
+    data = request.get_json()
+    document_content = data.get("document_content")
+    document_rules = data.get("document_rules")
+    validation_response = get_compliance_report(document_content,document_rules)
+    return json.loads(validation_response)
 
 def check_compliance_score(document_id):
     """Check compliance score for a document."""

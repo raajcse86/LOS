@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from controllers.document_controller import (
     get_all_documents, get_document, get_documents_by_loan,
     upload_document, download_document, extract_document_content,
-    check_compliance_score, delete_document, update_document
+    check_compliance_score, delete_document, update_document,validate_document
 )
 
 document_bp = Blueprint('document_bp', __name__)
@@ -36,6 +36,9 @@ document_bp.route('/<document_id>/extract/', methods=['GET'])(extract_document_c
 
 # Check compliance score
 document_bp.route('/<document_id>/compliance/', methods=['GET'])(check_compliance_score)
+
+document_bp.route('/validate_compliance/', methods=['POST'])(validate_document)
+
 
 # Delete document
 document_bp.route('/<document_id>/', methods=['DELETE'])(delete_document)
