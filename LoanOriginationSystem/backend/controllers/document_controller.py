@@ -11,6 +11,10 @@ from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import mimetypes
 import traceback
+from io import BytesIO
+import pdfplumber
+from io import BytesIO
+from docx import Document
 
 document_service = DocumentService()
 
@@ -144,8 +148,7 @@ def validate_document(document_id):
         try:
             if mime_type == 'application/pdf' or filename.lower().endswith('.pdf'):
                 # Extract text from PDF using pdfplumber
-                from io import BytesIO
-                import pdfplumber
+                
                 
                 current_app.logger.info("Processing PDF document")
                 with BytesIO(file_data) as pdf_buffer:
@@ -157,8 +160,7 @@ def validate_document(document_id):
             
             elif mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or filename.lower().endswith('.docx'):
                 # Extract text from DOCX using python-docx
-                from io import BytesIO
-                from docx import Document
+                
                 
                 current_app.logger.info("Processing DOCX document")
                 doc = Document(BytesIO(file_data))
@@ -204,18 +206,20 @@ def validate_document(document_id):
         current_app.logger.info(f"Successfully extracted {len(document_content)} characters from document")
 
         # Define document rules
-        document_rules = """Purpose: Verify employment, income, and consistency with application.
-        Checklist:
-        • Must be issued within the last 60 days.
-        • Must include:
-          o Employer name and contact info.
-          o Employee name and unique identifier (e.g., employee ID or last 4 of SSN).
-          o Pay period (start & end date).
-          o Gross income, net income, and itemized deductions.
-          o Tax withholdings (federal, state, local).
-        • Pay frequency must match what's declared in the loan application (e.g., biweekly).
-        • If bonuses or commissions are included, label clearly and separated from base pay.
-        • Any handwritten or manually edited values trigger high scrutiny (flag for manual review)."""
+        document_rules = """Purpose: Validate current employment status and employer relationship.
+Checklist:
+•	Must be on company letterhead with logo and official contact details.
+•	Must include:
+o	Date of issue (within the past 30 days).
+o	Full name of employee.
+o	Employment status (Full-time/Part-time/Contract).
+o	Date of joining.
+o	Job title.
+o	Salary or hourly wage and pay frequency.
+•	Must be signed by authorized HR personnel or supervisor.
+•	Should include a valid contact for verification.
+•	Should not contain discrepancies from submitted payslips or application.
+"""
 
         # Get compliance report
         try:
