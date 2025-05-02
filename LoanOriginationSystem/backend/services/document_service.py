@@ -9,6 +9,9 @@ import uuid
 import gridfs
 import zipfile
 import io
+from flask import current_app
+import mimetypes
+import traceback
 
 class DocumentService:
     def __init__(self):
@@ -138,41 +141,111 @@ class DocumentService:
             return None
 
     def download_document(self, document_id):
-        """Get file data for downloading a document from GridFS."""
+        """
+        Get file data for downloading a document from GridFS.
+        
+        Args:
+            document_id (str): The ID of the document to download
+            
+        Returns:
+            dict: Dictionary containing file_data, filename, and mime_type
+                  or None if document not found or error occurs
+        """
         try:
-            document = self.documents_collection.find_one({'_id': ObjectId(document_id)})
+            # Convert string ID to ObjectId if needed
+            doc_id = ObjectId(document_id) if isinstance(document_id, str) else document_id
+            
+            # Get document metadata from collection
+            document = self.documents_collection.find_one({'_id': doc_id})
             if not document:
+                current_app.logger.warning(f"Document not found in database: {document_id}")
                 return None
 
-            # If document was stored in GridFS
-            if 'gridfs_id' in document:
-                # Get the file from GridFS
-                grid_out = self.fs.get(document['gridfs_id'])
-                file_data = grid_out.read()
+            try:
+                # If document was stored in GridFS
+                if 'gridfs_id' in document:
+                    # Verify GridFS file exists
+                    if not self.fs.exists(document['gridfs_id']):
+                        current_app.logger.error(f"GridFS file missing for document: {document_id}")
+                        return None
+                    
+                    # Get the file from GridFS
+                    grid_out = self.fs.get(document['gridfs_id'])
+                    file_data = grid_out.read()
 
-                # If it's a zip file, extract the original file
-                if document.get('mimeType') == 'application/zip' or document['filename'].endswith('.zip'):
-                    # Extract the original file from the zip
-                    with zipfile.ZipFile(io.BytesIO(file_data)) as zip_file:
-                        # Get the first file in the zip (should be the only one)
-                        first_file = zip_file.namelist()[0]
-                        file_data = zip_file.read(first_file)
-            else:
-                # Legacy support for files stored on disk
-                file_path = os.path.join(self.uploads_dir, document['filename'])
-                if not os.path.exists(file_path):
+                    # If it's a zip file, extract the original file
+                    if (document.get('mimeType') == 'application/zip' or 
+                        document['filename'].endswith('.zip')):
+                        try:
+                            # Extract the original file from the zip
+                            with zipfile.ZipFile(io.BytesIO(file_data)) as zip_file:
+                                # Validate zip file contents
+                                if zip_file.testzip() is not None:
+                                    current_app.logger.error(f"Corrupted zip file for document: {document_id}")
+                                    return None
+                                    
+                                # Get the first file in the zip (should be the only one)
+                                file_list = zip_file.namelist()
+                                if not file_list:
+                                    current_app.logger.error(f"Empty zip file for document: {document_id}")
+                                    return None
+                                    
+                                first_file = file_list[0]
+                                file_data = zip_file.read(first_file)
+                        except zipfile.BadZipFile as e:
+                            current_app.logger.error(f"Invalid zip file for document {document_id}: {str(e)}")
+                            return None
+                else:
+                    # Legacy support for files stored on disk
+                    file_path = os.path.join(self.uploads_dir, document['filename'])
+                    if not os.path.exists(file_path):
+                        current_app.logger.error(f"File not found on disk: {file_path}")
+                        return None
+
+                    # Validate file path (prevent directory traversal)
+                    if not os.path.normpath(file_path).startswith(os.path.normpath(self.uploads_dir)):
+                        current_app.logger.error(f"Invalid file path detected: {file_path}")
+                        return None
+
+                    with open(file_path, 'rb') as file:
+                        file_data = file.read()
+
+                # Verify we have valid file data
+                if not file_data:
+                    current_app.logger.error(f"Empty file data for document: {document_id}")
                     return None
 
-                with open(file_path, 'rb') as file:
-                    file_data = file.read()
+                # Get correct mime type
+                mime_type = document.get('mimeType')
+                if not mime_type:
+                    # Try to guess mime type from filename
+                    mime_type, _ = mimetypes.guess_type(document['originalFilename'])
+                    if not mime_type:
+                        mime_type = 'application/octet-stream'
 
-            return {
-                'file_data': file_data,
-                'filename': document['originalFilename'],
-                'mime_type': document['mimeType']
-            }
+                # Log successful retrieval
+                current_app.logger.info(
+                    f"Successfully retrieved document: {document_id}, "
+                    f"size: {len(file_data)} bytes, "
+                    f"type: {mime_type}"
+                )
+
+                return {
+                    'file_data': file_data,
+                    'filename': document['originalFilename'],
+                    'mime_type': mime_type,
+                    'file_size': len(file_data)
+                }
+
+            except gridfs.errors.CorruptGridFile as e:
+                current_app.logger.error(f"Corrupt GridFS file for document {document_id}: {str(e)}")
+                return None
+            
         except Exception as e:
-            print(f"Error downloading document: {e}")
+            current_app.logger.error(
+                f"Error downloading document {document_id}: {str(e)}\n"
+                f"Traceback: {traceback.format_exc()}"
+            )
             return None
 
     def extract_document_content(self, document_id):

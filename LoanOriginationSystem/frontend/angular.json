@@ -42,7 +42,8 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "sourceMap": true
           },
           "configurations": {
             "production": {
@@ -90,7 +91,8 @@
             "host": "0.0.0.0",
             "port": 5000,
             "disableHostCheck": true,
-            "proxyConfig": "proxy.conf.json"
+            "proxyConfig": "proxy.conf.json",
+            "sourceMap": true
           },
           "configurations": {
             "production": {
@@ -113,5 +115,9 @@
   },
   "cli": {
     "analytics": false
+  },
+  "scripts": {
+    "build": "ng build --source-map=true",
+    "express": "node basic-server.js"
   }
 }

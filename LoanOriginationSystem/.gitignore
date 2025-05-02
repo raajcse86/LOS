@@ -1,0 +1,14 @@
+
+**/node_modules/
+**/dist/
+.angular/
+**/__pycache__/
+.idea/
+.replit
+.config/
+**/launch.json
+.venv/
+
+# Add these lines
+logs/
+*.log 

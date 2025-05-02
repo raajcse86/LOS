@@ -1,11 +1,16 @@
 import json
+import datetime
 
-from flask import jsonify, request, send_file
+from flask import jsonify, request, send_file, current_app
 from services.document_service import DocumentService
 from agents.compliance_validation import get_compliance_report
 from werkzeug.utils import secure_filename
 import os
 import io
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
+import mimetypes
+import traceback
 
 document_service = DocumentService()
 
@@ -93,15 +98,23 @@ def upload_document(loan_id):
 
 def download_document(document_id):
     """Download a document."""
-    result = document_service.download_document(document_id)
-    if not result:
-        return jsonify({"error": "Document not found"}), 404
+    current_app.logger.info(f"Download request received for document_id: {document_id}")
     
-    return send_file(
-        io.BytesIO(result['file_data']),
-        download_name=result['filename'],
-        mimetype=result['mime_type']
-    )
+    try:
+        result = document_service.download_document(document_id)
+        if not result:
+            current_app.logger.warning(f"Document not found: {document_id}")
+            return jsonify({"error": "Document not found"}), 404
+        
+        current_app.logger.info(f"Sending file: {result['filename']}")
+        return send_file(
+            io.BytesIO(result['file_data']),
+            download_name=result['filename'],
+            mimetype=result['mime_type']
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error downloading document: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to download document"}), 500
 
 def extract_document_content(document_id):
     """Extract content from a document."""
@@ -111,13 +124,135 @@ def extract_document_content(document_id):
     
     return jsonify(result)
 
+def validate_document(document_id):
+    """Validate compliance for a specific document."""
+    try:
+        # Get the document binary data
+        result = document_service.download_document(document_id)
+        if not result:
+            return jsonify({"error": "Document not found"}), 404
 
-def validate_document():
-    data = request.get_json()
-    document_content = data.get("document_content")
-    document_rules = data.get("document_rules")
-    validation_response = get_compliance_report(document_content,document_rules)
-    return json.loads(validation_response)
+        file_data = result['file_data']
+        mime_type = result['mime_type']
+        filename = result.get('filename', '')
+        
+        current_app.logger.info(f"Processing document: {filename} with mime type: {mime_type}")
+        
+        # Extract text content based on file type
+        document_content = ""
+        
+        try:
+            if mime_type == 'application/pdf' or filename.lower().endswith('.pdf'):
+                # Extract text from PDF using pdfplumber
+                from io import BytesIO
+                import pdfplumber
+                
+                current_app.logger.info("Processing PDF document")
+                with BytesIO(file_data) as pdf_buffer:
+                    with pdfplumber.open(pdf_buffer) as pdf:
+                        for page in pdf.pages:
+                            extracted_text = page.extract_text()
+                            if extracted_text:
+                                document_content += extracted_text + "\n"
+            
+            elif mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or filename.lower().endswith('.docx'):
+                # Extract text from DOCX using python-docx
+                from io import BytesIO
+                from docx import Document
+                
+                current_app.logger.info("Processing DOCX document")
+                doc = Document(BytesIO(file_data))
+                
+                # Extract text from paragraphs
+                paragraphs_text = [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
+                
+                # Extract text from tables
+                tables_text = []
+                for table in doc.tables:
+                    for row in table.rows:
+                        row_text = ' | '.join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                        if row_text:
+                            tables_text.append(row_text)
+                
+                # Combine all text with proper formatting
+                document_content = "\n".join(paragraphs_text)
+                if tables_text:
+                    document_content += "\n\nTables Content:\n" + "\n".join(tables_text)
+            
+            else:
+                current_app.logger.error(f"Unsupported file type: {mime_type} for file {filename}")
+                return jsonify({
+                    "error": "Unsupported file type",
+                    "message": "Only PDF and DOCX files are supported"
+                }), 400
+
+        except Exception as e:
+            current_app.logger.error(f"Error extracting text from document: {str(e)}", exc_info=True)
+            return jsonify({
+                "error": "Text extraction failed",
+                "message": f"Failed to extract text from the document: {str(e)}"
+            }), 500
+
+        # Validate extracted content
+        if not document_content.strip():
+            current_app.logger.warning(f"No text content extracted from document: {filename}")
+            return jsonify({
+                "error": "Empty content",
+                "message": "No text content could be extracted from the document"
+            }), 400
+
+        current_app.logger.info(f"Successfully extracted {len(document_content)} characters from document")
+
+        # Define document rules
+        document_rules = """Purpose: Verify employment, income, and consistency with application.
+        Checklist:
+        • Must be issued within the last 60 days.
+        • Must include:
+          o Employer name and contact info.
+          o Employee name and unique identifier (e.g., employee ID or last 4 of SSN).
+          o Pay period (start & end date).
+          o Gross income, net income, and itemized deductions.
+          o Tax withholdings (federal, state, local).
+        • Pay frequency must match what's declared in the loan application (e.g., biweekly).
+        • If bonuses or commissions are included, label clearly and separated from base pay.
+        • Any handwritten or manually edited values trigger high scrutiny (flag for manual review)."""
+
+        # Get compliance report
+        try:
+            current_app.logger.info("Generating compliance report")
+            validation_response = get_compliance_report(document_content, document_rules)
+            
+            result = json.loads(validation_response)
+            
+            # Add metadata to response
+            result['metadata'] = {
+                'filename': filename,
+                'document_type': 'PDF' if mime_type == 'application/pdf' or filename.lower().endswith('.pdf') else 'DOCX',
+                'content_length': len(document_content),
+                'processed_at': datetime.datetime.utcnow().isoformat()
+            }
+            
+            return jsonify(result)
+            
+        except json.JSONDecodeError as e:
+            current_app.logger.error(f"Invalid compliance report format: {str(e)}")
+            return jsonify({
+                "error": "Invalid compliance report format",
+                "message": "The compliance report could not be processed"
+            }), 500
+        except Exception as e:
+            current_app.logger.error(f"Error generating compliance report: {str(e)}", exc_info=True)
+            return jsonify({
+                "error": "Compliance validation failed",
+                "message": f"Failed to generate compliance report: {str(e)}"
+            }), 500
+
+    except Exception as e:
+        current_app.logger.error(f"Error in validate_document: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": "Processing failed",
+            "message": f"Failed to process document: {str(e)}"
+        }), 500
 
 def check_compliance_score(document_id):
     """Check compliance score for a document."""
