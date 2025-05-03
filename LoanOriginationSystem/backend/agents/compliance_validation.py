@@ -20,16 +20,16 @@ def get_compliance_report(document_content,document_rules):
     - Are there any discrepancies with the guideline?
 
     Return the validation results in structured JSON format with:
-    - Summarized Financial Health : Mention the details about the applicant financial health by analyzing the document
-    - Compliance Assessment : Give a clear cut report by analyzing and validating the document against the guidelines provided
-    - Risk Analysis: If any risks found , mention in detail about what are the risks , if there isn't any then mention about that.
-    - Compliance score: Give an accurate compliance score by calculating it with the help of the analyzed compliance validation and risks
+    - Summarized_Financial_Health : Mention the details about the applicant financial health by analyzing the document
+    - Compliance_Assessment : Give a clear cut report by analyzing and validating the document against the guidelines provided
+    - Risk_Analysis: If any risks found , mention in detail about what are the risks , if there isn't any then mention about that.
+    - Compliance_score: Give an accurate compliance score by calculating it with the help of the analyzed compliance validation and risks
     - Decision: If the compliance score is above 85 the mark as "approved" or else "rejected"
 
     Ensure the response is **valid JSON** with **NO extra text** before or after.
     
-    Regulatory Guideline: {document_content}
-    Uploaded Document: {document_rules}
+    Regulatory Guideline: {document_rules}
+    Uploaded Document: {document_content}
     """
     response = chat([HumanMessage(content=compliance_validation_prompt)])
     print(response.content[7:-3])

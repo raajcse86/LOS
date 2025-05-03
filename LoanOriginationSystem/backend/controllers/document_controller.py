@@ -1,5 +1,6 @@
 import json
 import datetime
+from typing import final
 
 from flask import jsonify, request, send_file, current_app
 from services.document_service import DocumentService
@@ -100,6 +101,9 @@ def upload_document(loan_id):
     
     return jsonify(document), 201
 
+def fetch_report():
+    return
+
 def download_document(document_id):
     """Download a document."""
     current_app.logger.info(f"Download request received for document_id: {document_id}")
@@ -130,6 +134,9 @@ def extract_document_content(document_id):
 
 def validate_document(document_id):
     """Validate compliance for a specific document."""
+    check_doc_exist = document_service.check_report_exists(document_id)
+    if check_doc_exist is not None:
+        return check_doc_exist
     try:
         # Get the document binary data
         result = document_service.download_document(document_id)
@@ -235,8 +242,11 @@ o	Salary or hourly wage and pay frequency.
                 'content_length': len(document_content),
                 'processed_at': datetime.datetime.utcnow().isoformat()
             }
+            final_report = jsonify(result)
+
+            document_service.update_document_report(document_id,final_report)
             
-            return jsonify(result)
+            return final_report
             
         except json.JSONDecodeError as e:
             current_app.logger.error(f"Invalid compliance report format: {str(e)}")

@@ -247,6 +247,24 @@ class DocumentService:
                 f"Traceback: {traceback.format_exc()}"
             )
             return None
+    def update_document_report(self,document_id,report):
+        report = report.get_json()
+        self.documents_collection.update_one(
+            {'_id': ObjectId(document_id)},
+            {
+                '$set': {
+                    'complianceScore':report['Compliance_score'],
+                    'status':report['Decision'],
+                    'validation_report': report ,
+                }
+            }
+        )
+
+    def check_report_exists(self,document_id):
+        document = self.documents_collection.find_one({'_id': ObjectId(document_id)})
+        if 'validation_report' not in document:
+            return None
+        return document['validation_report']
 
     def extract_document_content(self, document_id):
         """Extract content from a document using the actual file content."""
