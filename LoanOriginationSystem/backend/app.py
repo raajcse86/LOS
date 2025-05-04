@@ -8,6 +8,14 @@ from datetime import datetime
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
+# Import chatbot routes
+from routes.chatbot_routes import chatbot_bp
+# Import loan chatbot routes
+from routes.loan_chatbot_routes import loan_chatbot_bp
+
+# Register the loan chatbot blueprint after your other blueprints
+
+# Register blueprints
 
 # Load environment variables from .env file
 load_dotenv()
@@ -84,6 +92,10 @@ app.register_blueprint(loan_bp, url_prefix='/api/loans')
 app.register_blueprint(document_bp, url_prefix='/api/documents')
 app.register_blueprint(user_bp, url_prefix='/api/users')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
+app.register_blueprint(loan_chatbot_bp, url_prefix='/api/loan-chatbot')
+
+
 
 # Initialize Swagger
 init_swagger(app)
