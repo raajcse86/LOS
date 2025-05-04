@@ -10,33 +10,6 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 chat = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=GOOGLE_API_KEY)
 
-def get_simple_response(user_message, conversation_history):
-    """
-    A simple placeholder function that returns predefined responses.
-    This will be replaced with your LLM implementation.
-    """
-    # Simple responses based on user message
-    if "name" in user_message.lower():
-        return "Thank you for sharing your name! What's your email address?"
-    elif "email" in user_message.lower():
-        return "Got your email. What's your phone number?"
-    elif "phone" in user_message.lower():
-        return "Thanks! What's your estimated credit score?"
-    elif "credit" in user_message.lower():
-        return "What type of property are you looking to finance? (e.g., Single Family, Condo, Multi-Family)"
-    elif "property" in user_message.lower():
-        return "What's your estimated purchase price?"
-    elif "price" in user_message.lower() or "purchase" in user_message.lower():
-        return "How much down payment are you planning to make?"
-    elif "down payment" in user_message.lower():
-        return "What's your annual income?"
-    elif "income" in user_message.lower():
-        return "Thanks for providing all this information! I'll create a loan application for you. Would you like to proceed?"
-    elif "yes" in user_message.lower() or "proceed" in user_message.lower() or "ok" in user_message.lower():
-        return "Great! I've submitted your loan application. Our team will review it and contact you soon."
-    else:
-        return "I'm here to help with your loan application. Could you provide more details about what you're looking for?"
-
 
 # This is the function that you'll replace with your LLM implementation
 def get_llm_response(user_message, conversation_history):

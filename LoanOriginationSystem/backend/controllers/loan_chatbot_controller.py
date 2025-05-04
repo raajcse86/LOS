@@ -50,69 +50,6 @@ def get_loan_data(loan_id):
         return None
 
 
-def get_simple_loan_response(user_message, conversation_history, loan_context):
-    """
-    A simple placeholder function that returns predefined responses based on the loan data.
-    This will be replaced with your LLM implementation.
-    """
-    # Extract basic loan info for responses
-    loan_data = loan_context.get("loan", {})
-    borrower_info = loan_data.get("borrowerInfo", {})
-    property_info = loan_data.get("propertyInfo", {})
-    loan_pricing = loan_data.get("loanPricing", {})
-    milestone = loan_data.get("milestone", "Unknown")
-
-    # Simple response logic based on user query keywords
-    if "status" in user_message.lower() or "progress" in user_message.lower():
-        return f"This loan is currently in the {milestone} stage."
-
-    elif "borrower" in user_message.lower() or "applicant" in user_message.lower() or "name" in user_message.lower():
-        name = f"{borrower_info.get('firstName', '')} {borrower_info.get('lastName', '')}".strip()
-        if name:
-            return f"The borrower's name is {name}."
-        else:
-            return "I don't have the borrower's name on file."
-
-    elif "property" in user_message.lower() or "home" in user_message.lower() or "house" in user_message.lower():
-        if property_info:
-            address = property_info.get("address", {})
-            property_type = property_info.get("propertyType", "Not specified")
-            if address:
-                street = address.get("street", "")
-                city = address.get("city", "")
-                state = address.get("state", "")
-                zipcode = address.get("zipCode", "")
-                return f"The property is a {property_type} located at {street}, {city}, {state} {zipcode}."
-            else:
-                return f"The property is a {property_type}, but I don't have the address details."
-        else:
-            return "I don't have property information for this loan yet."
-
-    elif "rate" in user_message.lower() or "interest" in user_message.lower():
-        if loan_pricing:
-            rate = loan_pricing.get("interestRate", "Not specified")
-            return f"The interest rate for this loan is {rate}%."
-        else:
-            return "I don't have interest rate information for this loan yet."
-
-    elif "amount" in user_message.lower() or "loan amount" in user_message.lower() or "borrow" in user_message.lower():
-        if loan_pricing:
-            amount = loan_pricing.get("loanAmount", "Not specified")
-            return f"The loan amount is ${amount:,}."
-        else:
-            return "I don't have loan amount information yet."
-
-    elif "document" in user_message.lower() or "upload" in user_message.lower() or "file" in user_message.lower():
-        documents = loan_context.get("documents", [])
-        if documents:
-            doc_count = len(documents)
-            doc_types = [doc.get("document_type") for doc in documents]
-            return f"There are {doc_count} documents associated with this loan: {', '.join(doc_types)}."
-        else:
-            return "There are no documents uploaded for this loan yet."
-
-    # Default response
-    return "I'm your loan assistant. You can ask me about the loan status, borrower information, property details, interest rate, or documents."
 
 def get_llm_response(user_message,conversation_history,loan_application):
     loan_chat_prompt=f"""
