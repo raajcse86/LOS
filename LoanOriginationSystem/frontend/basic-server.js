@@ -113,6 +113,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'static', 'index.html'));
 });
 
+// Calculator route
+app.get('/calculator.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'static', 'calculator.html'));
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Basic server running on http://0.0.0.0:${PORT}`);

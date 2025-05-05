@@ -12,6 +12,7 @@ from logging.handlers import RotatingFileHandler
 from routes.chatbot_routes import chatbot_bp
 # Import loan chatbot routes
 from routes.loan_chatbot_routes import loan_chatbot_bp
+from routes.calculator_routes import calculator_bp
 
 # Register the loan chatbot blueprint after your other blueprints
 
@@ -94,8 +95,7 @@ app.register_blueprint(user_bp, url_prefix='/api/users')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
 app.register_blueprint(loan_chatbot_bp, url_prefix='/api/loan-chatbot')
-
-
+app.register_blueprint(calculator_bp, url_prefix='/api/calculator')
 
 # Initialize Swagger
 init_swagger(app)
