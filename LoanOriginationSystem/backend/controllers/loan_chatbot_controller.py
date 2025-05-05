@@ -83,6 +83,7 @@ def get_llm_response(user_message,conversation_history,loan_application):
     Only output what the user needs to hear in the current step — not everything.
     """
     response = chat([HumanMessage(content=loan_chat_prompt)])
+    print(f" response from LLM for LoanChat controller is  ${response}")
     return response.content
 
 def loan_chat_message():

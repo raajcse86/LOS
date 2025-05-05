@@ -58,9 +58,9 @@ app.use('/api', (req, res, next) => {
     return fullPath;
   },
   // Allow larger file uploads for documents
-  limit: '10mb',
+  limit: '20mb',
   // Increase timeout for slower operations
-  timeout: 15000,
+  timeout: 30000,
   // Add proper headers for file uploads
   proxyReqOptDecorator: function(proxyReqOpts, srcReq) {
     // For multipart form uploads, don't set content-type and let the browser set the boundary
